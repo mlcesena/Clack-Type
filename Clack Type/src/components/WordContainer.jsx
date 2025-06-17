@@ -3,8 +3,6 @@ import Word from "./Word.jsx";
 import Timer from '../components/Timer.jsx'
 import ResetButton from '../components/ResetButton.jsx'
 import { useState, useEffect } from "react";
-import "../css/WordContainer.css";
-import "../css/Word.css"
 
 function WordContainer() {
     const [input, setInput] = useState("");

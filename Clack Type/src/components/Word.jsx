@@ -1,6 +1,4 @@
 import { useState } from "react";
-import "../css/Word.css";
-import Letter from "./Letter.jsx"
 
 function Word({ content = "", activeState = false, letterIndex, setLetterIndex, letterStates = [] }) {
     const letters = content.split("");
