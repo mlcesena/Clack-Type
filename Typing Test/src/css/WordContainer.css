@@ -1,0 +1,6 @@
+.word-container {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: hidden;
+    margin-block: 1rem;
+}

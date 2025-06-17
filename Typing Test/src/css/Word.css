@@ -1,0 +1,23 @@
+.word {
+    width: fit-content;
+    height: fit-content;
+    padding: 5px;
+    font-size: 25px;
+    font-family: monospace;
+}
+
+.inactive {
+    color: #4d4d4d;
+}
+
+.active {
+    color: #6f6f6f;
+}
+
+.correct {
+    color: #5e7ce2;
+}
+
+.incorrect {
+    color: #ff4f4f;
+}
