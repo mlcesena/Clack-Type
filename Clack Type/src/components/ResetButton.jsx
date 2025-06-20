@@ -2,10 +2,13 @@ import "../css/main.css"
 import { useWordContext } from "../contexts/WordContext.jsx";
 
 function ResetButton() {
-    const { resetWordList } = useWordContext();
+    const { resetWordList, timeLimit, setTimeRemaining, testActive, setTestActive, setTestFinished } = useWordContext();
 
     function handleReset() {
         resetWordList()
+        setTestActive(false)
+        setTimeRemaining(timeLimit)
+        setTestFinished(false)
     }
 
     return (

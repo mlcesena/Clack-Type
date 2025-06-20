@@ -28,7 +28,7 @@
     --fs-300: .875rem;
     --fs-400: 1rem;
     --fs-450: 2rem;
-    --fs-500: 2.5rem;
+    --fs-500: 2.75rem;
     --fs-600: 3.5rem;
     --fs-700: 5rem;
 
@@ -202,11 +202,12 @@
   justify-content: center;
 }
 
-.test-wrapper {
+.typing-wrapper {
     /* width: 100%; */
     height: 155px;
     position: relative;
     margin-bottom: 4rem;
+    max-width: 1000px;
 }
 
 .word-container {
@@ -215,7 +216,7 @@
     overflow: hidden;
     margin-block: 1rem;
     height: 155px;
-    /* width: 100%; */
+    width: 100%;
 }
 
 .typing-input {
@@ -234,19 +235,17 @@
     pointer-events: none;
     display: block;
     position: absolute;
+    cursor: pointer;
     top: 8px;
 }
 
 #cursor {
   height: var(--fs-sub-heading);
-  width: .25rem;
+  width: .2rem;
   border-radius: .2rem;
   background-color: var(--clr-success-400);
   position: absolute;
   z-index: 2;
-  /* transform-origin:  top left; */
-  left: 0px;
-  top: 20px;
   margin-left: 0.5rem;
   animation: cursorBlink 1.25s ease-in-out infinite;
 }
@@ -340,7 +339,7 @@
     margin: 0.25rem 0.5rem;
     font-size: var(--fs-sub-heading);
     font-family: monospace;
-    line-height: var(--fs-sub-heading);
+    line-height: var(--fs-500);
 }
 
 .inactive {

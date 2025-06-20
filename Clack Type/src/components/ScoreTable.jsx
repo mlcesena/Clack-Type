@@ -1,19 +1,23 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import "../css/main.css"
+import { useWordContext } from "../contexts/WordContext.jsx";
 
 function ScoreTable() {
-    const [previousScore, setPreviousScore] = useState(0)
-    const [maxScore, setMaxScore] = useState(0)
-    const [avgScore, setAvgScore] = useState(0)
-    const [minScore, setMinScore] = useState(0)
+    const { previousScore, maxScore, avgScore, setPreviousScore, setMaxScore, setAvgScore } = useWordContext();
+
+    useEffect(() => {
+        if (previousScore > maxScore)
+            setMaxScore(previousScore)
+
+
+    }, [previousScore])
 
     return (
         <div className="score-container">
             <ul className="score-list">
                 <li className="score-item">Previous: {previousScore}</li>
-                <li className="score-item">Max: {maxScore}</li>
+                <li className="score-item">Highest: {maxScore}</li>
                 <li className="score-item">Average: {avgScore}</li>
-                <li className="score-item">Min: {minScore}</li>
             </ul>
         </div>
     )
