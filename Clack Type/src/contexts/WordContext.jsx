@@ -12,7 +12,7 @@ export const WordProvider = ({ children }) => {
     const [activeLetterIndex, setActiveLetterIndex] = useState(0);
     const [testActive, setTestActive] = useState(false);
     const [testFinished, setTestFinished] = useState(false);
-    const [timeLimit, setTimeLimit] = useState(5);
+    const [timeLimit, setTimeLimit] = useState(30);
     const [timeRemaining, setTimeRemaining] = useState(timeLimit);
     const [correctWordCount, setCorrectWordCount] = useState(0);
     const [typedWordCount, setTypedWordCount] = useState(0);
