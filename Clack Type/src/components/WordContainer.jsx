@@ -3,6 +3,7 @@ import Timer from '../components/Timer.jsx'
 import ResetButton from '../components/ResetButton.jsx'
 import { useState, useEffect, useRef } from "react";
 import { useWordContext } from "../contexts/WordContext.jsx";
+import Warnings from "./Warnings.jsx";
 
 function WordContainer() {
     const [input, setInput] = useState("");
@@ -10,8 +11,9 @@ function WordContainer() {
     const [letterStates, setLetterStates] = useState([]);
     const [inputHasFocus, setInputHasFocus] = useState(false);
     const [cursorPositions, setCursorPositions] = useState([0, 0]);
+    const [cursorVisible, setCursorVisible] = useState(false);
     const [initCursorY, setInitCursorY] = useState(0);
-    const { words, resetWordList, activeWordIndex, activeLetterIndex, testActive, testFinished, setActiveWordIndex, setActiveLetterIndex, setTestActive, setTestFinished, timeLimit, timeRemaining, setTimeRemaining, previousScore, setPreviousScore } = useWordContext();
+    const { words, resetWordList, activeWordIndex, activeLetterIndex, testActive, testFinished, setActiveWordIndex, setActiveLetterIndex, setTestActive, setTestFinished, timeLimit, timeRemaining, setTimeRemaining, previousScore, setPreviousScore, setCorrectWordCount, setTypedWordCount, setCorrectLetterCount, setTypedLetterCount, totalTestsRan, setTotalTestsRan, totalScore, setTotalScore } = useWordContext();
     const inputRef = useRef(null);
     const backspacePressed = useRef(false);
     const wordContainer = useRef(null);
@@ -23,59 +25,95 @@ function WordContainer() {
                 resetWordList();
             }
             else if (e.ctrlKey && e.key === "Enter") {
-                selectInputAsFocus(true)
+                inputRef.current.focus()
             }
         }
 
         document.addEventListener("keydown", handleKeyCombo);
 
         return () => {
-            document.removeEventListener("keydown", handleKeyCombo)
+            document.removeEventListener("keydown", handleKeyCombo);
         }
     }, []);
 
     useEffect(() => {
         moveCursor(0, 0, true);
-    }, [initCursorY])
+    }, [initCursorY]);
 
     // Updates the {letterStates} arrays whenever the words list is changed
     useEffect(() => {
+        if (wordContainer.current.children.length > 0) {
+            for (let i = 0; i < wordContainer.current.children.length; i++) {
+                wordContainer.current.children[i].style.display = "";
+            }
+        }
         setTypedWords(Array(words.length).fill(""));
         setLetterStates(words.map(word => Array(word.length).fill(null)));
         setInput("");
         setTestActive(false);
         setTimeRemaining(timeLimit);
         setTestFinished(false);
-        selectInputAsFocus(true);
+        inputRef.current.focus()
         moveCursor(0, 0, true);
-    }, [words])
+    }, [words]);
+
+    useEffect(() => {
+        const onFocus = () => setCursorVisible(false);
+        const onBlur = () => setCursorVisible(true);
+        const node = inputRef.current;
+        if (node) {
+            node.addEventListener('focus', onFocus);
+            node.addEventListener('blur', onBlur);
+        }
+
+        return () => {
+            if (node) {
+                node.removeEventListener('focus', onFocus);
+                node.removeEventListener('blur', onBlur);
+            }
+        };
+    }, [inputRef]);
 
     // Handle score and typing stat calculations
     useEffect(() => {
         if (testFinished) {
-            let correct = 0;
-            for (let i = 0; i < words.length; i++) {
-                if (wordContainer.current.children[i].classList.contains("typed"))
-                    correct++
+            let correctWords = 0;
+            let totalLetters = 0;
+            let correctLetters = 0;
+            let missedLetters = 0;
+            let extraLetters = 0;
+
+            for (let i = 0; i < activeWordIndex + 1; i++) {
+                const currentWord = wordContainer.current.children[i];
+                if (currentWord.classList.contains("complete") && !currentWord.classList.contains("wrong")) {
+                    correctWords++
+                }
+
+                console.log(currentWord.children.length)
+                totalLetters += currentWord.children.length;
+                for (let k = 0; k < currentWord.children.length; k++) {
+                    if (currentWord.children[k].classList.contains("extra")) {
+                        extraLetters++;
+                    }
+                    else if (currentWord.children[k].classList.contains("incorrect")) {
+
+                    }
+                    else if (currentWord.children[k].classList.contains("typed")) {
+                        correctLetters++;
+                    }
+                }
             }
-            console.log(activeWordIndex + 1)
-            console.log(correct)
-            setPreviousScore(correct)
+
+            setTotalScore((t) => t + correctWords)
+            setTotalTestsRan((t) => t + 1)
+            setCorrectWordCount(correctWords)
+            setTypedWordCount(activeWordIndex)
+            setTypedLetterCount(totalLetters)
+            setCorrectLetterCount(correctLetters)
+
+            setPreviousScore(correctWords)
         }
     }, [testFinished])
-
-    // Select the input box as the active focus element
-    function selectInputAsFocus(value) {
-        if (value) {
-            if (inputRef.current) {
-                inputRef.current.focus();
-                setInputHasFocus(true)
-            }
-        }
-        else {
-            setInputHasFocus(false)
-        }
-    }
 
     // Updates {activeWord} state to the next word
     function selectNextWord() {
@@ -125,6 +163,9 @@ function WordContainer() {
         setCursorPositions((p) => p.map((value, idx) => idx === 0 ? value + x : value + y))
     }
 
+    /**
+     * CAN THE CURSOR LOGIC BE HANDLED BY USE EFFECT?
+     */
     // Handle any changes to the input
     function handleInputChange(event) {
         if (testFinished)
@@ -135,12 +176,6 @@ function WordContainer() {
             setTestActive(true);
             setPreviousScore(0);
         }
-
-        console.log(activeWordIndex + " " + activeLetterIndex)
-
-        /**
-         * FIX ISSUE AFTER STARTING A NEW TEST WHEN YOU HAVE GONE BEYOND THE FIRST 2 LINES
-         */
 
         const currentWord = wordContainer.current.children[activeWordIndex];
         const value = event.target.value;
@@ -158,18 +193,17 @@ function WordContainer() {
             return updated;
         });
 
-        /**
-         * FIX ISSUE WHEN HITTING SPACE AT THE START OF THE TEST
-         */
-
         // Handle press of space
         if (value.endsWith(" ") && (value.charAt(value.length - 2) != " ")) {
             if (backspacePressed.current === true) {
                 backspacePressed.current = false;
-                return
+                return;
             }
             else if (activeWordIndex === words.length - 1) {
-                return
+                return;
+            }
+            else if (activeWordIndex === 0 && activeLetterIndex === 0) {
+                return;
             }
 
             nextWord = wordContainer.current.children[activeWordIndex + 1];
@@ -228,11 +262,12 @@ function WordContainer() {
         let currentWord = wordContainer.current.children[activeWordIndex];
         let prevWord = activeWordIndex > 0 ? wordContainer.current.children[activeWordIndex - 1] : null;
 
-        /**
-         * FIX ISSUE WHEN HITTING BACKSPACE AT [0, 0] 
-         */
         if (event.key === "Backspace") {
             backspacePressed.current = true; // Variable to prevent backspace from affecting word selection in handleInputChange
+
+            if (activeWordIndex === 0 && activeLetterIndex === 0) {
+                return
+            }
 
             if (activeLetterIndex > 0) { // Decrement letter index in active word
                 x = currentWord.children[0].getBoundingClientRect().width;
@@ -307,7 +342,12 @@ function WordContainer() {
 
     return (
         <div className="content-container content-grid">
-            <Timer></Timer>
+            <div className="info-bar">
+                <Timer></Timer>
+                <div className="warning-wrapper">
+                    <Warnings inputFocus={inputRef}></Warnings>
+                </div>
+            </div>
             <div className="typing-wrapper">
                 <input
                     id="user-input"
@@ -319,11 +359,9 @@ function WordContainer() {
                     autoCorrect="off"
                     autoFocus
                     ref={inputRef}
-                    onFocus={() => { selectInputAsFocus(true) }}
-                    onBlur={() => { selectInputAsFocus(false) }}
                     disabled={timeRemaining === 0}></input>
-                <div id="cursor" hidden={!(inputHasFocus && timeRemaining !== 0)} style={{ left: `${cursorPositions[0]}px`, top: `${cursorPositions[1]}px` }}></div>
-                <div className="word-container" ref={wordContainer} onClick={() => { selectInputAsFocus(true) }}>
+                <div id="cursor" hidden={cursorVisible} style={{ left: `${cursorPositions[0]}px`, top: `${cursorPositions[1]}px` }}></div>
+                <div className="word-container" ref={wordContainer} onClick={() => { inputRef.current.focus() }}>
                     {words.map((word, idx) => (
                         <Word
                             content={word}
@@ -337,7 +375,25 @@ function WordContainer() {
                     ))}
                 </div>
             </div>
-            <ResetButton></ResetButton>
+            <div className="control-wrapper">
+                <div className="control-container">
+                    <ResetButton></ResetButton>
+                </div>
+                <div className="control-shortcuts">
+                    <div>
+                        <span className="key">Shift</span>
+                        &thinsp;&thinsp;+&thinsp;&thinsp;
+                        <span className="key">Enter</span>
+                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Restart
+                    </div>
+                    <div>
+                        <span className="key">Ctrl</span>
+                        &thinsp;&thinsp;+&thinsp;&thinsp;
+                        <span className="key">Enter</span>
+                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Focus
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }

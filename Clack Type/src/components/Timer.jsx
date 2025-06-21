@@ -39,9 +39,9 @@ function Timer() {
     }, [isRunning])
 
     return (
-        <div>
+        <>
             <h2 className="timer">{timeRemaining}</h2>
-        </div>
+        </>
     )
 }
 

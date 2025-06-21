@@ -1,12 +1,9 @@
-# React + Vite
+# Clack Type
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Clack type is a minimal typing test built completely using React. My goal with this project was to dive deeper into React and its capabilities. I wanted to challenge myself with a variety of new concepts.
 
-Currently, two official plugins are available:
+## NOTE
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project was heavily inspired by the amazing work of the team at monkeytype.com! I love what they have produced and wanted to try out making my own version of a typing test.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- [@monkeytype](https://monkeytype.com)

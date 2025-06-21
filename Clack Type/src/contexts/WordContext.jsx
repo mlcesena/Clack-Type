@@ -12,12 +12,18 @@ export const WordProvider = ({ children }) => {
     const [activeLetterIndex, setActiveLetterIndex] = useState(0);
     const [testActive, setTestActive] = useState(false);
     const [testFinished, setTestFinished] = useState(false);
-    const [timeLimit, setTimeLimit] = useState(30);
+    const [timeLimit, setTimeLimit] = useState(5);
     const [timeRemaining, setTimeRemaining] = useState(timeLimit);
     const [correctWordCount, setCorrectWordCount] = useState(0);
-    const [previousScore, setPreviousScore] = useState(0)
-    const [maxScore, setMaxScore] = useState(0)
-    const [avgScore, setAvgScore] = useState(0)
+    const [typedWordCount, setTypedWordCount] = useState(0);
+    const [correctLetterCount, setCorrectLetterCount] = useState(0);
+    const [typedLetterCount, setTypedLetterCount] = useState(0);
+    const [previousScore, setPreviousScore] = useState(0);
+    const [maxScore, setMaxScore] = useState(0);
+    const [avgScore, setAvgScore] = useState(0);
+    const [totalScore, setTotalScore] = useState(0);
+    const [totalTestsRan, setTotalTestsRan] = useState(0);
+
 
     useEffect(() => {
         getWordSet()
@@ -58,9 +64,14 @@ export const WordProvider = ({ children }) => {
         timeLimit,
         timeRemaining,
         correctWordCount,
+        typedWordCount,
+        correctLetterCount,
+        typedLetterCount,
         previousScore,
         maxScore,
         avgScore,
+        totalScore,
+        totalTestsRan,
         setActiveWordIndex,
         setActiveLetterIndex,
         setTypedWords,
@@ -69,9 +80,14 @@ export const WordProvider = ({ children }) => {
         setTimeLimit,
         setTimeRemaining,
         setCorrectWordCount,
+        setTypedWordCount,
+        setCorrectLetterCount,
+        setTypedLetterCount,
         setPreviousScore,
         setMaxScore,
         setAvgScore,
+        setTotalScore,
+        setTotalTestsRan,
         resetWordList,
     };
 

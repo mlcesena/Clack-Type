@@ -3,12 +3,13 @@ import "../css/main.css"
 import { useWordContext } from "../contexts/WordContext.jsx";
 
 function ScoreTable() {
-    const { previousScore, maxScore, avgScore, setPreviousScore, setMaxScore, setAvgScore } = useWordContext();
+    const { previousScore, maxScore, avgScore, setPreviousScore, setMaxScore, setAvgScore, totalScore, totalTestsRan } = useWordContext();
 
     useEffect(() => {
         if (previousScore > maxScore)
             setMaxScore(previousScore)
 
+        setAvgScore(totalTestsRan === 0 ? 0 : (totalScore / totalTestsRan).toFixed(1))
 
     }, [previousScore])
 
