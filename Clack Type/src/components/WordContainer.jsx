@@ -1,19 +1,23 @@
 import Word from "./Word.jsx";
 import Timer from '../components/Timer.jsx'
-import ResetButton from '../components/ResetButton.jsx'
+import Controls from './Controls.jsx'
 import { useState, useEffect, useRef } from "react";
 import { useWordContext } from "../contexts/WordContext.jsx";
+import { useTimerContext } from "../contexts/TimerContext.jsx";
+import { useStatContext } from "../contexts/StatContext.jsx";
 import Warnings from "./Warnings.jsx";
+import ScoreTable from '../components/ScoreTable.jsx'
 
 function WordContainer() {
     const [input, setInput] = useState("");
-    const [typedWords, setTypedWords] = useState([]);
+    // const [typedWords, setTypedWords] = useState([]);
     const [letterStates, setLetterStates] = useState([]);
-    const [inputHasFocus, setInputHasFocus] = useState(false);
     const [cursorPositions, setCursorPositions] = useState([0, 0]);
     const [cursorVisible, setCursorVisible] = useState(false);
     const [initCursorY, setInitCursorY] = useState(0);
-    const { words, resetWordList, activeWordIndex, activeLetterIndex, testActive, testFinished, setActiveWordIndex, setActiveLetterIndex, setTestActive, setTestFinished, timeLimit, timeRemaining, setTimeRemaining, previousScore, setPreviousScore, setCorrectWordCount, setTypedWordCount, setCorrectLetterCount, setTypedLetterCount, totalTestsRan, setTotalTestsRan, totalScore, setTotalScore } = useWordContext();
+    const { words, activeWordIndex, activeLetterIndex, typedWords, setActiveWordIndex, setActiveLetterIndex, setTypedWords, resetWordList } = useWordContext();
+    const { testActive, testFinished, setTestActive, setTestFinished, timeLimit, timeRemaining, setTimeRemaining, loopTest, setLoopTest } = useTimerContext();
+    const { setPreviousScore, setCorrectWordCount, setTypedWordCount, setCorrectLetterCount, setTypedLetterCount, setTotalTestCount, setTotalScore } = useStatContext();
     const inputRef = useRef(null);
     const backspacePressed = useRef(false);
     const wordContainer = useRef(null);
@@ -22,10 +26,18 @@ function WordContainer() {
     useEffect(() => {
         const handleKeyCombo = (e) => {
             if (e.shiftKey && e.key == "Enter") {
-                resetWordList();
+                if (loopTest) {
+                    resetTest();
+                }
+                else {
+                    resetWordList();
+                }
             }
             else if (e.ctrlKey && e.key === "Enter") {
                 inputRef.current.focus()
+            }
+            else if (e.ctrlKey && e.key === "l") {
+                setLoopTest((l) => !l);
             }
         }
 
@@ -42,19 +54,7 @@ function WordContainer() {
 
     // Updates the {letterStates} arrays whenever the words list is changed
     useEffect(() => {
-        if (wordContainer.current.children.length > 0) {
-            for (let i = 0; i < wordContainer.current.children.length; i++) {
-                wordContainer.current.children[i].style.display = "";
-            }
-        }
-        setTypedWords(Array(words.length).fill(""));
-        setLetterStates(words.map(word => Array(word.length).fill(null)));
-        setInput("");
-        setTestActive(false);
-        setTimeRemaining(timeLimit);
-        setTestFinished(false);
-        inputRef.current.focus()
-        moveCursor(0, 0, true);
+        resetTest();
     }, [words]);
 
     useEffect(() => {
@@ -82,38 +82,66 @@ function WordContainer() {
             let correctLetters = 0;
             let missedLetters = 0;
             let extraLetters = 0;
+            let wordCount = activeWordIndex;
 
             for (let i = 0; i < activeWordIndex + 1; i++) {
                 const currentWord = wordContainer.current.children[i];
-                if (currentWord.classList.contains("complete") && !currentWord.classList.contains("wrong")) {
-                    correctWords++
-                }
 
-                console.log(currentWord.children.length)
+                /** 
+                 * FIX ISSUE WHERE NON TYPED WORDS ARE INCLUDED IN LETTER COUNT
+                 */
                 totalLetters += currentWord.children.length;
-                for (let k = 0; k < currentWord.children.length; k++) {
-                    if (currentWord.children[k].classList.contains("extra")) {
-                        extraLetters++;
-                    }
-                    else if (currentWord.children[k].classList.contains("incorrect")) {
+                if (currentWord.classList.contains("complete") && !currentWord.classList.contains("wrong")) {
+                    correctWords++;
+                    correctLetters += currentWord.children.length;
 
+                    if (i === activeWordIndex) {
+                        wordCount++;
                     }
-                    else if (currentWord.children[k].classList.contains("typed")) {
-                        correctLetters++;
+                }
+                else {
+                    for (let k = 0; k < currentWord.children.length; k++) {
+                        if (currentWord.children[k].classList.contains("extra")) {
+                            extraLetters++;
+                        }
+                        else if (currentWord.children[k].classList.contains("incorrect")) {
+
+                        }
+                        else if (currentWord.children[k].classList.contains("typed")) {
+                            correctLetters++;
+                        }
                     }
                 }
             }
 
             setTotalScore((t) => t + correctWords)
-            setTotalTestsRan((t) => t + 1)
+            setTotalTestCount((t) => t + 1)
             setCorrectWordCount(correctWords)
-            setTypedWordCount(activeWordIndex)
+            setTypedWordCount(wordCount)
             setTypedLetterCount(totalLetters)
             setCorrectLetterCount(correctLetters)
 
             setPreviousScore(correctWords)
         }
     }, [testFinished])
+
+    function resetTest() {
+        if (wordContainer.current.children.length > 0) {
+            for (let i = 0; i < wordContainer.current.children.length; i++) {
+                wordContainer.current.children[i].style.display = "";
+            }
+        }
+        setTypedWords(Array(words.length).fill(""));
+        setLetterStates(words.map(word => Array(word.length).fill(null)));
+        setInput("");
+        setActiveWordIndex(0);
+        setActiveLetterIndex(0);
+        setTestActive(false);
+        setTimeRemaining(timeLimit);
+        setTestFinished(false);
+        inputRef.current.focus()
+        moveCursor(0, 0, true);
+    }
 
     // Updates {activeWord} state to the next word
     function selectNextWord() {
@@ -342,6 +370,7 @@ function WordContainer() {
 
     return (
         <div className="content-container content-grid">
+            <ScoreTable></ScoreTable>
             <div className="info-bar">
                 <Timer></Timer>
                 <div className="warning-wrapper">
@@ -357,6 +386,7 @@ function WordContainer() {
                     onKeyDown={handleKeyDown}
                     autoComplete="off"
                     autoCorrect="off"
+                    spellCheck="off"
                     autoFocus
                     ref={inputRef}
                     disabled={timeRemaining === 0}></input>
@@ -367,6 +397,7 @@ function WordContainer() {
                             content={word}
                             key={word.id}
                             typedValue={typedWords[idx]}
+                            disabled={true}
                             activeState={idx === activeWordIndex}
                             letterIndex={activeLetterIndex}
                             setLetterIndex={setActiveLetterIndex}
@@ -377,7 +408,7 @@ function WordContainer() {
             </div>
             <div className="control-wrapper">
                 <div className="control-container">
-                    <ResetButton></ResetButton>
+                    <Controls inputFocus={inputRef} testReset={resetTest}></Controls>
                 </div>
                 <div className="control-shortcuts">
                     <div>
@@ -391,6 +422,12 @@ function WordContainer() {
                         &thinsp;&thinsp;+&thinsp;&thinsp;
                         <span className="key">Enter</span>
                         &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Focus
+                    </div>
+                    <div>
+                        <span className="key">Ctrl</span>
+                        &thinsp;&thinsp;+&thinsp;&thinsp;
+                        <span className="key">L</span>
+                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Loop
                     </div>
                 </div>
             </div>

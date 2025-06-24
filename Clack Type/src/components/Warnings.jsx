@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTimerContext } from "../contexts/TimerContext";
 
 function WarningLabel({ text = "" }) {
+
+
     return (
         <div className="warning-container">
-            <h2 className="fs-body fw-semi-bold">{text}</h2>
+            <h2 className="fs-body fw-bold ff-detail">{text}</h2>
         </div>
     )
 }
@@ -27,10 +30,11 @@ function useCapsLockWarning() {
 }
 
 function useInputFocusWarning(inputRef) {
+    const { testFinished, testActive } = useTimerContext();
     const [show, setShow] = useState(false);
     useEffect(() => {
         const onFocus = () => setShow(false);
-        const onBlur = () => setShow(true);
+        const onBlur = () => { if (testActive) setShow(true); }
         const node = inputRef.current;
         if (node) {
             node.addEventListener('focus', onFocus);
@@ -43,7 +47,8 @@ function useInputFocusWarning(inputRef) {
                 node.removeEventListener('blur', onBlur);
             }
         };
-    }, [inputRef]);
+    }, [inputRef, testActive]);
+
     return show;
 }
 
@@ -51,11 +56,13 @@ function useInputFocusWarning(inputRef) {
  * FIX DISPLAYING INPUT WARNING WHEN TEST IS DONE
  */
 function Warnings({ inputFocus }) {
+    const { loopTest } = useTimerContext();
     const capsOn = useCapsLockWarning();
     const hasFocus = useInputFocusWarning(inputFocus);
 
     return (
         <>
+            {loopTest && <WarningLabel text="Loop On" />}
             {capsOn && <WarningLabel text="Caps Lock" />}
             {hasFocus && <WarningLabel text="Input Focus" />}
         </>

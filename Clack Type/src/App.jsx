@@ -23,7 +23,6 @@ export default App
 
 // @Todo 
 
-// add buttons to change timer value
 // create tool bar for reset, repeat, etc.
 // redo look of score bar
 // when timer is done, calculate WPM
@@ -39,3 +38,4 @@ export default App
 // button to generate a new set of words
 // create a timer
 // create warning/info bar (caps is on, input doesn't have focus)
+// add buttons to change timer value
