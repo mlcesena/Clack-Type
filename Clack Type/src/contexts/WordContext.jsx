@@ -16,7 +16,8 @@ export const WordProvider = ({ children }) => {
     }, [])
 
     useEffect(() => {
-        setTypedWords(words.map((word, idx) => { idx: "" }))
+        // setTypedWords(words.map((word, idx) => { idx: "" }))
+        setTypedWords(Array(words.length).fill(""));
     }, [words])
 
     // Utility function to handle fetching of word list

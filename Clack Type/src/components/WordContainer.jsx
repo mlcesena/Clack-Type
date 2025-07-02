@@ -10,7 +10,6 @@ import ScoreTable from '../components/ScoreTable.jsx'
 
 function WordContainer() {
     const [input, setInput] = useState("");
-    // const [typedWords, setTypedWords] = useState([]);
     const [letterStates, setLetterStates] = useState([]);
     const [cursorPositions, setCursorPositions] = useState([0, 0]);
     const [cursorVisible, setCursorVisible] = useState(false);
@@ -19,12 +18,16 @@ function WordContainer() {
     const { testActive, testFinished, setTestActive, setTestFinished, timeLimit, timeRemaining, setTimeRemaining, loopTest, setLoopTest } = useTimerContext();
     const { setPreviousScore, setCorrectWordCount, setTypedWordCount, setCorrectLetterCount, setTypedLetterCount, setTotalTestCount, setTotalScore } = useStatContext();
     const inputRef = useRef(null);
+    const cursorRef = useRef(null);
     const backspacePressed = useRef(false);
     const wordContainer = useRef(null);
 
     // Handler for key combination controls [restarting test, selecting focus, etc.]
     useEffect(() => {
         const handleKeyCombo = (e) => {
+            /**
+             * FIX LOOP TEST
+             */
             if (e.shiftKey && e.key == "Enter") {
                 if (loopTest) {
                     resetTest();
@@ -37,6 +40,7 @@ function WordContainer() {
                 inputRef.current.focus()
             }
             else if (e.ctrlKey && e.key === "l") {
+                console.log("hi")
                 setLoopTest((l) => !l);
             }
         }
@@ -87,10 +91,9 @@ function WordContainer() {
             for (let i = 0; i < activeWordIndex + 1; i++) {
                 const currentWord = wordContainer.current.children[i];
 
-                /** 
-                 * FIX ISSUE WHERE NON TYPED WORDS ARE INCLUDED IN LETTER COUNT
-                 */
-                totalLetters += currentWord.children.length;
+                if (currentWord.children[0].classList.contains("typed"))
+                    totalLetters += currentWord.children.length;
+
                 if (currentWord.classList.contains("complete") && !currentWord.classList.contains("wrong")) {
                     correctWords++;
                     correctLetters += currentWord.children.length;
@@ -179,10 +182,11 @@ function WordContainer() {
             let wordY = wordContainer.current.getBoundingClientRect().top;
             let letterY = wordContainer.current.children.length > 0 ? wordContainer.current.children[0].children[0].getBoundingClientRect().top : 0;
             let letterHeight = wordContainer.current.children.length > 0 ? wordContainer.current.children[0].children[0].getBoundingClientRect().height : 0;
+            let cursorHeight = cursorRef.current.getBoundingClientRect().height;
 
             // Determine what the default y position of the cursor should be for the session
-            if (initCursorY === 0 && Math.abs(letterY - wordY + letterHeight / 2) !== wordY) {
-                setInitCursorY(letterY - wordY + letterHeight / 2)
+            if (initCursorY === 0 && (Math.abs(letterY - wordY + letterHeight / 2) !== wordY) && cursorRef.current) {
+                setInitCursorY(letterY - wordY + (letterHeight / 2) - (cursorHeight / 2))
             }
             setCursorPositions([0, initCursorY]);
             return;
@@ -191,72 +195,119 @@ function WordContainer() {
         setCursorPositions((p) => p.map((value, idx) => idx === 0 ? value + x : value + y))
     }
 
+    // Remove typed words from view 
+    function removeWordRow() {
+        const currentWord = wordContainer.current.children[activeWordIndex];
+        const currentY = currentWord.getBoundingClientRect().top;
+
+        for (let i = activeWordIndex; i >= 0; i--) {
+            if (wordContainer.current.children[i].getBoundingClientRect().top < currentY) {
+                wordContainer.current.children[i].style.display = "none";
+            }
+            else {
+                wordContainer.current.children[i].style.display = "";
+            }
+        }
+    }
+
+    function wordOutOfBound(dir) {
+        const currentWord = wordContainer.current.children[activeWordIndex];
+        const letterWidth = currentWord.children[0].getBoundingClientRect().width;
+        const typedLength = typedWords[activeWordIndex] ? typedWords[activeWordIndex].length + 1 : 0;
+        const wordLength = words[activeWordIndex].length;
+
+        switch (dir) {
+            case "right":
+                const currentRight = currentWord.getBoundingClientRect().right;
+                const contRight = wordContainer.current.getBoundingClientRect().right;
+
+                if ((typedLength > wordLength) && ((currentRight + letterWidth + 8) > contRight)) {
+                    return true;
+                }
+
+                break;
+
+            default:
+                break;
+        }
+
+        return false;
+    }
+
+    function getLastTypedIndex() {
+        const prevWord = activeWordIndex > 0 ? wordContainer.current.children[activeWordIndex - 1] : null;
+
+        // Loop through letters backwards until a letter was typed
+        for (let i = prevWord.children.length - 1; i >= 0; i--) {
+            if (prevWord.children[i].classList.contains("typed")) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
     /**
      * CAN THE CURSOR LOGIC BE HANDLED BY USE EFFECT?
      */
     // Handle any changes to the input
     function handleInputChange(event) {
-        if (testFinished)
+        // Prevent input after test ends and limit extra incorrect letters
+        if ((testFinished) || (event.target.value.split(" ").at(-1).length === 20))
             return;
 
         // Start the test
-        if (!testActive && timeRemaining > 0) {
+        if (!testActive && timeRemaining > 0 && !event.target.value.endsWith(" ")) {
             setTestActive(true);
             setPreviousScore(0);
         }
 
-        const currentWord = wordContainer.current.children[activeWordIndex];
-        const value = event.target.value;
         let x = 0;
         let y = 0;
-        let nextWord = null;
+        const value = event.target.value;
+        const currentWord = wordContainer.current.children[activeWordIndex];
+        const nextWord = activeWordIndex + 1 < words.length ? wordContainer.current.children[activeWordIndex + 1] : null;
+        const currentY = currentWord.getBoundingClientRect().top;
+        const nextY = nextWord ? nextWord.getBoundingClientRect().top : 0;
+        const contBottom = wordContainer.current.getBoundingClientRect().bottom;
 
-        setInput(value);
+        if (!wordOutOfBound("right") || backspacePressed.current || value.endsWith(" ")) {
+            // Update the input component's value
+            setInput(value);
 
-        // Update the list of typed values for each word in the test
-        setTypedWords(prev => {
-            const values = value.split(" ");
-            const updated = [...prev];
-            updated[activeWordIndex] = values[activeWordIndex];
-            return updated;
-        });
+            // Update the list of typed values for each word in the test
+            setTypedWords(prev => {
+                const values = value.split(" ");
+                const updated = [...prev];
+                updated[activeWordIndex] = values[activeWordIndex];
+                return updated;
+            });
+        }
+        else {
+            return;
+        }
 
         // Handle press of space
-        if (value.endsWith(" ") && (value.charAt(value.length - 2) != " ")) {
-            if (backspacePressed.current === true) {
+        if (value.endsWith(" ")) {
+            if (backspacePressed.current) {
                 backspacePressed.current = false;
                 return;
             }
-            else if (activeWordIndex === words.length - 1) {
-                return;
-            }
-            else if (activeWordIndex === 0 && activeLetterIndex === 0) {
+            else if ((activeWordIndex === words.length - 1) || (activeLetterIndex === 0)) {
                 return;
             }
 
-            nextWord = wordContainer.current.children[activeWordIndex + 1];
-            let nextWordX = nextWord.children[0].getBoundingClientRect().x;
-            let currentWordEndX = currentWord.children[activeLetterIndex - 1].getBoundingClientRect().x;
-            let nextLetterWidth = nextWord.children[0].getBoundingClientRect().width;
+            const nextWordX = nextWord.children[0].getBoundingClientRect().x;
+            const currentWordEndX = currentWord.children[activeLetterIndex - 1].getBoundingClientRect().x;
+            const nextLetterWidth = nextWord.children[0].getBoundingClientRect().width;
 
             x += nextWordX - currentWordEndX - nextLetterWidth;
 
             // Determine if cursor needs to move down a row
             if (activeWordIndex + 1 < words.length) {
-                const currentY = currentWord.getBoundingClientRect().top;
-                const nextY = nextWord.getBoundingClientRect().top;
-
-                if ((currentY + (nextY - currentY) * 2) > wordContainer.current.getBoundingClientRect().bottom) {
+                if ((currentY + (nextY - currentY) * 2) > contBottom) {
                     x = -cursorPositions[0];
-
-                    for (let i = activeWordIndex; i >= 0; i--) {
-                        if (wordContainer.current.children[i].getBoundingClientRect().top < currentY) {
-                            wordContainer.current.children[i].style.display = "none";
-                        }
-                        else {
-                            wordContainer.current.children[i].style.display = "";
-                        }
-                    }
+                    removeWordRow();
                 }
                 else if (nextY > currentY) {
                     x = -cursorPositions[0];
@@ -270,14 +321,20 @@ function WordContainer() {
         else if (value.length > input.length) { // Handle all other key presses (that are not backspace)
             x = currentWord.children[0].getBoundingClientRect().width;
 
+            // Check typed value is longer than word and if right of word + width + margin is > right boundary
+            if (wordOutOfBound("right")) {
+                x = -cursorPositions[0] + x * (activeLetterIndex + 1);
+                if ((currentY + (nextY - currentY) * 2) <= contBottom) {
+                    y = nextY - currentY;
+                }
+            }
+
             // Update the state of the current letter then move to the next
             validateInput(value)
             setActiveLetterIndex((a) => a + 1)
+
         }
         moveCursor(x, y, false);
-        /**
-         * Filter out non alpha-numeric?
-         */
     }
 
     // Handle backspace inputs
@@ -285,91 +342,86 @@ function WordContainer() {
         if (testFinished)
             return;
 
-        let x = 0;
-        let y = 0;
-        let currentWord = wordContainer.current.children[activeWordIndex];
-        let prevWord = activeWordIndex > 0 ? wordContainer.current.children[activeWordIndex - 1] : null;
-
-        if (event.key === "Backspace") {
-            backspacePressed.current = true; // Variable to prevent backspace from affecting word selection in handleInputChange
-
-            if (activeWordIndex === 0 && activeLetterIndex === 0) {
-                return
-            }
-
-            if (activeLetterIndex > 0) { // Decrement letter index in active word
-                x = currentWord.children[0].getBoundingClientRect().width;
-                setActiveLetterIndex((a) => a - 1)
-
-                updateLetterState(null, activeWordIndex, activeLetterIndex - 1)
-            }
-            else if (activeLetterIndex === 0 && prevWord.getBoundingClientRect().top === 0) {
-                /**
-                 * MOVE THIS/CHANGE HOW THIS IS CHECKED
-                 */
-            }
-            else if (activeWordIndex > 0) { // Move to previous word
-                let unfinished = false;
-                let lastTypedIndex = 0;
-                let prevLetterX = 0;
-                let prevLetterWidth = 0;
-                let currentWordStartX = currentWord.children[0].getBoundingClientRect().x;
-
-                // Determine the last typed letter index if word is uncompleted
-                if (!prevWord.classList.contains("complete")) {
-                    unfinished = true;
-
-                    // Loop through letters backwards until a letter was typed
-                    for (let i = prevWord.children.length - 1; i >= 0; i--) {
-                        if (prevWord.children[i].classList.contains("typed")) {
-                            lastTypedIndex = i;
-                            break;
-                        }
-                    }
-                }
-                else {
-                    lastTypedIndex = prevWord.children.length - 1;
-                }
-
-                // Get x and width of previous word's letter 
-                prevLetterX = prevWord.children[lastTypedIndex].getBoundingClientRect().x;
-                prevLetterWidth = prevWord.children[lastTypedIndex].getBoundingClientRect().width;
-
-                // Calculate new x position
-                x += currentWordStartX - prevLetterX - prevLetterWidth;
-
-                // Determine if cursor needs to move up a row
-                if (activeWordIndex - 1 >= 0) {
-                    const currentY = currentWord.getBoundingClientRect().top;
-                    const previousY = prevWord.getBoundingClientRect().top;
-
-                    // Ignore if previously line is hidden
-                    if (previousY === 0) {
-                        x = 0;
-                        y = 0;
-                    } // Move cursor up only words are on different lines
-                    else if (previousY < currentY) {
-                        y = -(currentY - previousY);
-                    }
-                }
-
-                if (unfinished)
-                    setActiveLetterIndex(lastTypedIndex + 1)
-                else
-                    setActiveLetterIndex(prevWord.children.length)
-
-                setActiveWordIndex((a) => a - 1)
-            }
-            moveCursor(-x, y, false);
-        }
-        else {
+        if (event.key !== "Backspace") {
             // Reset ref flag if backspace wasn't pressed 
             backspacePressed.current = false;
+            return;
         }
+
+        if (activeWordIndex === 0 && activeLetterIndex === 0) {
+            return
+        }
+
+        let x = 0;
+        let y = 0;
+        const currentWord = wordContainer.current.children[activeWordIndex];
+        const currentY = currentWord.getBoundingClientRect().top;
+        const currentLeft = currentWord.children[0].getBoundingClientRect().x;
+        const prevWord = activeWordIndex > 0 ? wordContainer.current.children[activeWordIndex - 1] : null;
+        const previousY = prevWord ? prevWord.getBoundingClientRect().top : 0;
+
+        backspacePressed.current = true; // Variable to prevent backspace from affecting word selection in handleInputChange
+
+        if (activeLetterIndex > 0) { // Decrement letter index in active word
+            x = currentWord.children[0].getBoundingClientRect().width;
+            // if (prevWord != null) {
+            // const prevRight = prevWord.getBoundingClientRect().right;
+            // const currentWidth = currentWord.getBoundingClientRect().width;
+            // const contRight = wordContainer.current.getBoundingClientRect().right;
+            // const typedLength = typedWords[activeWordIndex].length;
+            // const wordLength = words[activeWordIndex].length;
+
+            // if ((typedLength > wordLength) && (prevRight + 16 + currentWidth - x + 8 <= contRight)) {
+            //     x = -(prevRight - x - 24)
+            // if ((currentY !== previousY) && (prevWord.style.display !== "none")) {
+            //     y = -(currentY - previousY);
+            // }
+            // }
+            // }
+
+            setActiveLetterIndex((a) => a - 1)
+            updateLetterState(null, activeWordIndex, activeLetterIndex - 1)
+        }
+        else if ((activeWordIndex > 0) && !(activeLetterIndex === 0 && previousY === 0)) { // Move to previous word
+            let unfinished = false;
+            let lastTypedIndex = 0;
+
+            // Determine the last typed letter index if word is uncompleted
+            if (!prevWord.classList.contains("complete")) {
+                unfinished = true;
+                lastTypedIndex = getLastTypedIndex();
+            }
+            else {
+                lastTypedIndex = prevWord.children.length - 1;
+            }
+
+            // Get x and width of previous word's letter 
+            const prevLetterX = prevWord.children[lastTypedIndex].getBoundingClientRect().x;
+            const prevLetterWidth = prevWord.children[lastTypedIndex].getBoundingClientRect().width;
+
+            // Calculate new x position
+            x += currentLeft - prevLetterX - prevLetterWidth;
+
+            // Determine if cursor needs to move up a row
+            if (activeWordIndex - 1 >= 0) {
+                // Ignore if previously line is hidden
+                if (previousY === 0) {
+                    x = 0;
+                    y = 0;
+                } // Move cursor up only words are on different lines
+                else if (previousY < currentY) {
+                    y = -(currentY - previousY);
+                }
+            }
+
+            setActiveLetterIndex(unfinished ? (lastTypedIndex + 1) : prevWord.children.length)
+            setActiveWordIndex((a) => a - 1)
+        }
+        moveCursor(-x, y, false);
     }
 
     return (
-        <div className="content-container content-grid">
+        <div className="content-container">
             <ScoreTable></ScoreTable>
             <div className="info-bar">
                 <Timer></Timer>
@@ -390,7 +442,7 @@ function WordContainer() {
                     autoFocus
                     ref={inputRef}
                     disabled={timeRemaining === 0}></input>
-                <div id="cursor" hidden={cursorVisible} style={{ left: `${cursorPositions[0]}px`, top: `${cursorPositions[1]}px` }}></div>
+                <div id="cursor" ref={cursorRef} hidden={cursorVisible} style={{ left: `${cursorPositions[0]}px`, top: `${cursorPositions[1]}px` }}></div>
                 <div className="word-container" ref={wordContainer} onClick={() => { inputRef.current.focus() }}>
                     {words.map((word, idx) => (
                         <Word
@@ -406,31 +458,7 @@ function WordContainer() {
                     ))}
                 </div>
             </div>
-            <div className="control-wrapper">
-                <div className="control-container">
-                    <Controls inputFocus={inputRef} testReset={resetTest}></Controls>
-                </div>
-                <div className="control-shortcuts">
-                    <div>
-                        <span className="key">Shift</span>
-                        &thinsp;&thinsp;+&thinsp;&thinsp;
-                        <span className="key">Enter</span>
-                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Restart
-                    </div>
-                    <div>
-                        <span className="key">Ctrl</span>
-                        &thinsp;&thinsp;+&thinsp;&thinsp;
-                        <span className="key">Enter</span>
-                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Focus
-                    </div>
-                    <div>
-                        <span className="key">Ctrl</span>
-                        &thinsp;&thinsp;+&thinsp;&thinsp;
-                        <span className="key">L</span>
-                        &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Loop
-                    </div>
-                </div>
-            </div>
+            <Controls inputFocus={inputRef} testReset={resetTest}></Controls>
         </div>
     )
 }

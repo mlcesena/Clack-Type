@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useStatContext } from "../contexts/StatContext";
 import { useTimerContext } from "../contexts/TimerContext";
 
-function ClearButton() {
+function DeleteButton() {
     const { setPreviousScore, setMaxScore, setAvgScore, setTotalScore, setTotalTestCount } = useStatContext();
     const { testActive } = useTimerContext();
 
@@ -17,10 +17,10 @@ function ClearButton() {
     }
 
     return (
-        <button className="delete-btn" onClick={handleClearData}>
+        <button className="delete-btn" aria-label="Clear score data" data-title="Clear score data" onClick={handleClearData}>
             Del
         </button>
     )
 }
 
-export default ClearButton;
+export default DeleteButton;

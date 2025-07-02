@@ -23,8 +23,6 @@ export default App
 
 // @Todo 
 
-// create tool bar for reset, repeat, etc.
-// redo look of score bar
 // when timer is done, calculate WPM
 // add fastest wpm, average wpm, and slowest wpm
 
@@ -39,3 +37,5 @@ export default App
 // create a timer
 // create warning/info bar (caps is on, input doesn't have focus)
 // add buttons to change timer value
+// create tool bar for reset, repeat, etc.
+// redo look of score bar

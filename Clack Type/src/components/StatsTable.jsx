@@ -13,7 +13,7 @@ function StatsTable() {
     }, [testFinished]);
 
     return (
-        <div className="content-container full-width" style={{ maxWidth: "500px" }}>
+        <div className="content-container" style={{ maxWidth: "500px" }}>
             <h2 className="fs-sub-heading fw-medium ff-title">Statistics</h2>
             <div className="stat-grid">
                 <div className="stat-item">

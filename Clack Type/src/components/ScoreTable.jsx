@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import "../css/main.css"
 import { useStatContext } from "../contexts/StatContext.jsx";
-import ClearButton from "./ClearButton.jsx"
+import DeleteButton from "./DeleteButton.jsx"
 
 function ScoreTable() {
     const { previousScore, maxScore, avgScore, setPreviousScore, setMaxScore, setAvgScore, totalScore, totalTestCount } = useStatContext();
@@ -15,13 +15,13 @@ function ScoreTable() {
     }, [previousScore])
 
     return (
-        <div className="score-container full-width">
+        <div className="score-container">
             <ul className="score-list">
-                <li className="score-item">Previous: {previousScore}</li>
-                <li className="score-item">Highest: {maxScore}</li>
-                <li className="score-item">Average: {avgScore}</li>
+                <li className="score-item">Last: {previousScore}</li>
+                <li className="score-item">High: {maxScore}</li>
+                <li className="score-item">Avg: {avgScore}</li>
             </ul>
-            <ClearButton></ClearButton>
+            <DeleteButton></DeleteButton>
         </div>
     )
 }

@@ -23,22 +23,25 @@ function Word({ content = "", activeState = false, typedValue = "", letterIndex,
 
     useEffect(() => {
         const checkTypedValue = () => {
-            if (typedValue === "") {
+            if (typedValue === "") { // If nothing has been typed, set the word state to none
                 setWordTyped("")
             }
-            else if (typedValue === content) {
+            else if (typedValue === content) { // If typed value and word match, mark as complete
                 setWordTyped("complete")
             }
-            else if (typedValue !== content && typedValue.length >= content.length) {
+            else if (typedValue !== content && typedValue.length >= content.length) { // If typed value and word don't match, mark as complete wrong
                 setWordTyped("incorrect")
             }
-            else {
+            else { // If typed length is less than word, mark as incomplete
                 setWordTyped("incomplete")
             }
-            const letters = typedValue.slice(content.length);
-            if (letters.length > 0)
+
+            // Get extra characters after the length of the word
+            const extra = typedValue.slice(content.length);
+            if (extra.length > 0) // Change look of typed letters
                 setLetterTyped("")
-            setExtraLetters(letters)
+
+            setExtraLetters(extra) // Update extra letters
         }
         checkTypedValue();
     }, [typedValue])

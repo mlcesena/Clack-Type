@@ -1,11 +1,10 @@
 import "../css/main.css"
-import { useRef } from "react";
 import { useTimerContext } from "../contexts/TimerContext.jsx";
 import { useWordContext } from "../contexts/WordContext.jsx";
 
-function ControlButton({ type = null, inputFocus = null, testReset }) {
+function ControlButton({ type = null, desc = null, inputFocus = null, testReset }) {
     const { resetWordList } = useWordContext();
-    const { timeLimit, setTimeRemaining, testActive, setTestActive, setTestFinished, loopTest, setLoopTest } = useTimerContext();
+    const { loopTest, setLoopTest } = useTimerContext();
 
     function handleControlClick() {
         switch (type) {
@@ -30,17 +29,39 @@ function ControlButton({ type = null, inputFocus = null, testReset }) {
     }
 
     return (
-        <button className="control-btn" onClick={handleControlClick}><span className="material-symbols-outlined">{type}</span></button>
+        <button className="control-btn" aria-label={desc} data-title={desc} onClick={handleControlClick}><span className="material-symbols-outlined">{type}</span></button>
     )
 }
 
 function Controls({ inputFocus, testReset }) {
     return (
-        <>
-            {<ControlButton type={"restart_alt"} inputFocus={inputFocus} testReset={testReset}></ControlButton>}
-            {<ControlButton type={"arrows_input"} inputFocus={inputFocus}></ControlButton>}
-            {<ControlButton type={"all_inclusive"}></ControlButton>}
-        </>
+        <div className="control-wrapper">
+            <div className="control-container">
+                {<ControlButton type={"restart_alt"} desc="Restart test" inputFocus={inputFocus} testReset={testReset}></ControlButton>}
+                {<ControlButton type={"arrows_input"} desc="Focus on input" inputFocus={inputFocus}></ControlButton>}
+                {<ControlButton type={"all_inclusive"} desc="Loop test content"></ControlButton>}
+            </div>
+            <div className="control-shortcuts">
+                <div>
+                    <span className="key">Shift</span>
+                    &thinsp;&thinsp;+&thinsp;&thinsp;
+                    <span className="key">Enter</span>
+                    &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Restart
+                </div>
+                <div>
+                    <span className="key">Ctrl</span>
+                    &thinsp;&thinsp;+&thinsp;&thinsp;
+                    <span className="key">Enter</span>
+                    &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Focus
+                </div>
+                <div>
+                    <span className="key">Ctrl</span>
+                    &thinsp;&thinsp;+&thinsp;&thinsp;
+                    <span className="key">L</span>
+                    &thinsp;&thinsp;-&thinsp;&thinsp;&thinsp;Loop
+                </div>
+            </div>
+        </div>
     )
 }
 
