@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useTimerContext } from "../contexts/TimerContext";
 
 function WarningLabel({ text = "" }) {
-
-
     return (
         <div className="warning-container">
             <h2 className="fs-body fw-bold ff-detail">{text}</h2>
@@ -52,9 +50,6 @@ function useInputFocusWarning(inputRef) {
     return show;
 }
 
-/**
- * FIX DISPLAYING INPUT WARNING WHEN TEST IS DONE
- */
 function Warnings({ inputFocus }) {
     const { loopTest } = useTimerContext();
     const capsOn = useCapsLockWarning();

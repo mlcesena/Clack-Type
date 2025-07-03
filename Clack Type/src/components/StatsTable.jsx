@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useStatContext } from "../contexts/StatContext.jsx";
 import { useTimerContext } from "../contexts/TimerContext.jsx";
 

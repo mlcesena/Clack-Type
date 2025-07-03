@@ -21,13 +21,15 @@ function WordContainer() {
     const cursorRef = useRef(null);
     const backspacePressed = useRef(false);
     const wordContainer = useRef(null);
+    const contentContainer = useRef(null);
+    const cursorPositionsRef = useRef(cursorPositions);
+    const activeWordIndexRef = useRef(activeWordIndex);
+    const activeLetterIndexRef = useRef(activeLetterIndex);
+    const initCursorYRef = useRef(initCursorY);
 
     // Handler for key combination controls [restarting test, selecting focus, etc.]
     useEffect(() => {
         const handleKeyCombo = (e) => {
-            /**
-             * FIX LOOP TEST
-             */
             if (e.shiftKey && e.key == "Enter") {
                 if (loopTest) {
                     resetTest();
@@ -40,17 +42,19 @@ function WordContainer() {
                 inputRef.current.focus()
             }
             else if (e.ctrlKey && e.key === "l") {
-                console.log("hi")
                 setLoopTest((l) => !l);
             }
         }
-
         document.addEventListener("keydown", handleKeyCombo);
-
         return () => {
             document.removeEventListener("keydown", handleKeyCombo);
         }
-    }, []);
+    }, [loopTest]);
+
+    useEffect(() => {
+        window.addEventListener("resize", handleResize);
+        return () => { window.removeEventListener("resize", handleResize) }
+    }, [])
 
     useEffect(() => {
         moveCursor(0, 0, true);
@@ -63,7 +67,7 @@ function WordContainer() {
 
     useEffect(() => {
         const onFocus = () => setCursorVisible(false);
-        const onBlur = () => setCursorVisible(true);
+        const onBlur = () => { setCursorVisible(true) };
         const node = inputRef.current;
         if (node) {
             node.addEventListener('focus', onFocus);
@@ -76,7 +80,7 @@ function WordContainer() {
                 node.removeEventListener('blur', onBlur);
             }
         };
-    }, [inputRef]);
+    }, [inputRef, testActive]);
 
     // Handle score and typing stat calculations
     useEffect(() => {
@@ -91,9 +95,11 @@ function WordContainer() {
             for (let i = 0; i < activeWordIndex + 1; i++) {
                 const currentWord = wordContainer.current.children[i];
 
+                // Add to totalLetters only if word was started
                 if (currentWord.children[0].classList.contains("typed"))
                     totalLetters += currentWord.children.length;
 
+                // Handle completed words
                 if (currentWord.classList.contains("complete") && !currentWord.classList.contains("wrong")) {
                     correctWords++;
                     correctLetters += currentWord.children.length;
@@ -102,13 +108,13 @@ function WordContainer() {
                         wordCount++;
                     }
                 }
-                else {
+                else { // Handle incomplete or incorrect words
                     for (let k = 0; k < currentWord.children.length; k++) {
                         if (currentWord.children[k].classList.contains("extra")) {
                             extraLetters++;
                         }
                         else if (currentWord.children[k].classList.contains("incorrect")) {
-
+                            missedLetters++;
                         }
                         else if (currentWord.children[k].classList.contains("typed")) {
                             correctLetters++;
@@ -117,31 +123,77 @@ function WordContainer() {
                 }
             }
 
+            // Update test statistics
             setTotalScore((t) => t + correctWords)
             setTotalTestCount((t) => t + 1)
             setCorrectWordCount(correctWords)
             setTypedWordCount(wordCount)
             setTypedLetterCount(totalLetters)
             setCorrectLetterCount(correctLetters)
-
             setPreviousScore(correctWords)
         }
     }, [testFinished])
 
+    useEffect(() => {
+        cursorPositionsRef.current = cursorPositions;
+    }, [cursorPositions]);
+    useEffect(() => {
+        activeWordIndexRef.current = activeWordIndex;
+    }, [activeWordIndex]);
+    useEffect(() => {
+        activeLetterIndexRef.current = activeLetterIndex;
+    }, [activeLetterIndex]);
+    useEffect(() => {
+        initCursorYRef.current = initCursorY;
+    }, [initCursorY]);
+
+    const handleResize = () => {
+        if (wordContainer.current) {
+            // Cursor x and y
+            const cx = cursorPositionsRef.current[0];
+            const cy = cursorPositionsRef.current[1];
+
+            // Active letter x and y
+            const lx = wordContainer.current.children[activeWordIndexRef.current].children[activeLetterIndexRef.current].getBoundingClientRect().x;
+            const ly = wordContainer.current.children[activeWordIndexRef.current].children[activeLetterIndexRef.current].getBoundingClientRect().y;
+
+            // Word Container x and y
+            const wx = wordContainer.current.getBoundingClientRect().x;
+            const wy = wordContainer.current.getBoundingClientRect().y;
+
+            // Left margin of word
+            const ml = parseFloat(getComputedStyle(wordContainer.current.children[activeWordIndexRef.current]).marginLeft)
+
+            const newX = (lx - (wx + ml)) - cx;
+            const newY = (ly - (wy + 7)) - (cy - initCursorYRef.current);
+
+            moveCursor(newX, newY, false)
+        }
+    }
+
     function resetTest() {
+        // Reset display prop of all hidden words
         if (wordContainer.current.children.length > 0) {
             for (let i = 0; i < wordContainer.current.children.length; i++) {
                 wordContainer.current.children[i].style.display = "";
             }
         }
+
+        // Reset typed values, states and input value
         setTypedWords(Array(words.length).fill(""));
         setLetterStates(words.map(word => Array(word.length).fill(null)));
         setInput("");
+
+        // Reset word and letter indices
         setActiveWordIndex(0);
         setActiveLetterIndex(0);
+
+        // Reset test parameters/states
         setTestActive(false);
         setTimeRemaining(timeLimit);
         setTestFinished(false);
+
+        // Reset focus and cursor
         inputRef.current.focus()
         moveCursor(0, 0, true);
     }
@@ -210,6 +262,7 @@ function WordContainer() {
         }
     }
 
+    // Determine if an additional letter will push word out of boundary
     function wordOutOfBound(dir) {
         const currentWord = wordContainer.current.children[activeWordIndex];
         const letterWidth = currentWord.children[0].getBoundingClientRect().width;
@@ -234,16 +287,15 @@ function WordContainer() {
         return false;
     }
 
+    // Determine the last typed index of the previous word
     function getLastTypedIndex() {
         const prevWord = activeWordIndex > 0 ? wordContainer.current.children[activeWordIndex - 1] : null;
-
         // Loop through letters backwards until a letter was typed
         for (let i = prevWord.children.length - 1; i >= 0; i--) {
             if (prevWord.children[i].classList.contains("typed")) {
                 return i;
             }
         }
-
         return 0;
     }
 
@@ -271,6 +323,7 @@ function WordContainer() {
         const nextY = nextWord ? nextWord.getBoundingClientRect().top : 0;
         const contBottom = wordContainer.current.getBoundingClientRect().bottom;
 
+        // Accept input if it won't push word out of bounds, backspace or space pressed
         if (!wordOutOfBound("right") || backspacePressed.current || value.endsWith(" ")) {
             // Update the input component's value
             setInput(value);
@@ -348,6 +401,7 @@ function WordContainer() {
             return;
         }
 
+        // Ignore backspace on first word's first letter
         if (activeWordIndex === 0 && activeLetterIndex === 0) {
             return
         }
@@ -421,7 +475,7 @@ function WordContainer() {
     }
 
     return (
-        <div className="content-container">
+        <div className="content-container" ref={contentContainer}>
             <ScoreTable></ScoreTable>
             <div className="info-bar">
                 <Timer></Timer>
@@ -447,7 +501,7 @@ function WordContainer() {
                     {words.map((word, idx) => (
                         <Word
                             content={word}
-                            key={word.id}
+                            key={idx}
                             typedValue={typedWords[idx]}
                             disabled={true}
                             activeState={idx === activeWordIndex}
@@ -464,3 +518,15 @@ function WordContainer() {
 }
 
 export default WordContainer;
+
+/**
+ * @TODO
+ * 
+ * Handle deleting row when active word is pushed to 3rd row
+ * Rewrite cursor movement logic
+ * Dynamically load word elements instead of loading all at once
+ * Recalculate WPM
+ * Add loading to word container upon reset
+ * Handle failure to fetch words
+ * General efficiency evalulation
+ */

@@ -20,7 +20,7 @@ export const WordProvider = ({ children }) => {
         setTypedWords(Array(words.length).fill(""));
     }, [words])
 
-    // Utility function to handle fetching of word list
+    // Handle fetching of word list
     const getWordSet = async () => {
         try {
             const wordSet = await generateWordSet();

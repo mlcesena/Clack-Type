@@ -84,7 +84,7 @@ function Timer() {
     }
 
     function handleTimerClick(value) {
-        if (timeLimit + value < 1 || testActive || testFinished)
+        if ((timeLimit + value < 1 || timeLimit + value > 120) || testActive || testFinished)
             return
 
         setTimeLimit((t) => t + value)

@@ -304,6 +304,20 @@ input {
     width: 100%;
 }
 
+.word {
+  width: fit-content;
+  height: fit-content;
+  margin: 0.25rem 0.5rem;
+  font-size: var(--fs-sub-heading);
+  font-family: monospace;
+  line-height: var(--fs-500);
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
 .typing-input {
     background-color: yellow;
     /* border: none;
@@ -326,6 +340,7 @@ input {
 #cursor {
   height: var(--fs-sub-heading);
   width: .25rem;
+  /* margin-block: 0.25rem; */
   /* border-radius: .2rem; */
   /* background-color: var(--clr-success-400); */
   background-color: #d8a935;
@@ -585,20 +600,6 @@ input {
 
   transition: background-color 0.25s ease-in-out;
   transition: box-shadow 0.25s ease-in-out;
-}
-
-.word {
-  width: fit-content;
-  height: fit-content;
-  margin: 0.25rem 0.5rem;
-  font-size: var(--fs-sub-heading);
-  font-family: monospace;
-  line-height: var(--fs-500);
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -o-user-select: none;
-  user-select: none;
 }
 
 .inactive {

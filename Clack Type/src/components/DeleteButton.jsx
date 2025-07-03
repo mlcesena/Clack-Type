@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStatContext } from "../contexts/StatContext";
 import { useTimerContext } from "../contexts/TimerContext";
 
